@@ -4,7 +4,7 @@ var HelloWorld = React.createClass({
   render: function() {
     return (
       <div className='hello_world'>
-        <h1>Hello World!</h1>
+        <h1>Hello {this.props.name}!</h1>
         <div>
           Thanks for trying <a href="https://github.com/keredson/bottle-react" target='_blank'>bottle-react</a>!
         </div>

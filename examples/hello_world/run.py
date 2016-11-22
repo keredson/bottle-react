@@ -9,7 +9,7 @@ br = BottleReact(app, prod=PROD)
 @app.get('/')
 def root():
   return br.render_html(
-    br.HelloWorld()
+    br.HelloWorld({'name':'World'})
   )
 
 def run():

@@ -13,7 +13,7 @@ var HelloWorld = React.createClass({
   render: function() {
     return (
       <div className='hello_world'>
-        <h1>Hello World!</h1>
+        <h1>Hello {this.props.name}!</h1>
         <div>
           Thanks for trying bottle-react!
         </div>
@@ -33,7 +33,7 @@ br = BottleReact(app)
 @app.get('/')
 def root():
   return br.render_html(
-    br.HelloWorld()
+    br.HelloWorld({'name':'World'})
   )
 ```
 
