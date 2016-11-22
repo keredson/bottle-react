@@ -33,7 +33,7 @@ except ImportError:
   pass # need to not error here for setup.py to get the version
 
 
-__version__='0.1.0'
+__version__='0.1.1'
 
 
 
@@ -316,9 +316,9 @@ bottlereact = {
   _asset_path: function(fn) {
     var hashed_fn = this._assets ? this._assets[fn] : null;
     if (hashed_fn) {
-      return '/hassets/'+ hashed_fn
+      return '/__br_assets__/'+ hashed_fn
     } else {
-      return '/hassets/'+ fn
+      return '/__br_assets__/'+ fn
     }
   },
 
