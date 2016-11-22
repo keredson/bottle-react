@@ -26,9 +26,11 @@
 from __future__ import print_function
 
 import collections, json, os, re, shutil, subprocess
-import bottle
-import react.jsx
-
+try:
+  import bottle
+  import react.jsx
+except ImportError:
+  pass # need to not error here for setup.py to get the version
 
 
 __version__='0.1.0'
