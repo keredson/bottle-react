@@ -3,12 +3,10 @@
 ## Description
 This library allows you to return react components from Bottle.  It currently powers https://www.hvst.com/.
 
-Example:
+## Example
 
 Assume you have a normal JSX file `hello_world.jsx`:
 ```js
-// require hello_world.css
-
 var HelloWorld = React.createClass({
   render: function() {
     return (
@@ -21,7 +19,6 @@ var HelloWorld = React.createClass({
     );
   }
 })
-
 bottlereact._register('HelloWorld', HelloWorld)
 ```
 
@@ -37,8 +34,21 @@ def root():
   )
 ```
 
+You will have a functioning bottle+react app.
 
 ## Install
 ```python
 sudo pip install bottle-react
 ```
+## Documentation
+
+`bottlereact.BottleReact()` takes several keyword arguments, all of which are optional:
+
+| KW Argument | Description | Default |
+| ----------- | ----------- | ------- |
+| `prod` | Are we in production?  If so, compile all JSX into pure javascript.  Otherwise serve the raw JSX with the babel-core shim. | False |
+| `jsx_path` | Where bottle-react should search for JSX files. | `jsx` |
+| `asset_path` | Where bottle-react should search for javascript/css/etc files. | `assets` |
+| `work_path` | Where bottle-react outputs static js files when in production mode (if you want to serve them statically). | `/tmp/bottlereact` |
+| `jsx_path` | Where bottle-react should search for JSX files. | `jsx` |
+| `verbose` | Verbose mode. | `not prod` |
