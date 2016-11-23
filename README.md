@@ -34,7 +34,7 @@ def root():
   )
 ```
 
-When your route is called the react component will be rendered.  See https://github.com/keredson/bottle-react/tree/master/examples/hello_world for details.
+When your route is called the react component will be rendered.  See [examples/hello_world](examples/hello_world) for details.
 
 ## Install
 ```python
