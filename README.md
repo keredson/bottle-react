@@ -3,7 +3,7 @@
 ## Description
 This library allows you to return react components from Bottle.  It currently powers https://www.hvst.com/.
 
-## Example
+## Example (Hello World)
 
 Assume you have a normal JSX file `hello_world.jsx`:
 ```js
@@ -34,7 +34,7 @@ def root():
   )
 ```
 
-You will have a functioning bottle+react app.
+When your route is called the react component will be rendered.  See https://github.com/keredson/bottle-react/tree/master/examples/hello_world for details.
 
 ## Install
 ```python
