@@ -33,7 +33,7 @@ except ImportError:
   pass # need to not error here for setup.py to get the version
 
 
-__version__='0.1.1'
+__version__='0.1.2'
 
 
 
@@ -264,7 +264,7 @@ class _ReactClass(object):
     self.default_props = dict
     try:
       import jsx_props
-      default_props = jsx_props.__dict__.get('init%s'%name, dict)
+      self.default_props = jsx_props.__dict__.get('init%s'%name, dict)
     except ImportError:
       pass
   def __call__(self, props=None, children=None):
