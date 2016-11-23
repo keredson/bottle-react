@@ -33,7 +33,7 @@ except ImportError:
   pass # need to not error here for setup.py to get the version
 
 
-__version__='0.1.2'
+__version__='0.1.3'
 
 
 
@@ -183,6 +183,8 @@ class BottleReact(object):
         deps_html.append('<script src="%s"></script>' % bottle.html_escape(path))
       elif path.endswith('.jsx'):
         deps_html.append('<script type="text/babel" src="%s"></script>' % bottle.html_escape(path))
+      else: # assume javascript
+        deps_html.append('<script src="%s"></script>' % bottle.html_escape(path))
     deps_html = '\n'.join(deps_html)
     init = '''
     <script>
