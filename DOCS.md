@@ -69,7 +69,7 @@ By default `render_html` looks for a template in your Bottle template path (usua
 </html>
 ```
 
-Note the two bottle params that are passed in `deps` and `init`.  `deps` should be placed in side the `<head>` of your template.  `init` should go after the `</body>` tag.  And the root element your React component will bind to will be the element with the `id="__body__"`.
+Note the two bottle params that are passed in `deps` and `init`.  `deps` should be placed in side the `<head>` of your template.  `init` should go after the `</body>` tag.  (Note the `{{!` which tells Bottle not to HTML-escape the `<script>` tags.  The HTML-escaping of user variables is done internally in bottle-react.)  And the root element your React component will bind to will be the element with the `id="__body__"`.
 
 In the given `HelloWorld` example, the `deps` variable will look like this (if in dev mode):
 ```html
@@ -120,3 +120,20 @@ If you want to use another template, pass in `template='template_fn'` into `rend
 
 Any additional `kwargs` passed into `render_html()` will be passed through to the template.  For example, `title='My Site'` is very common.
 
+
+## jsx_props.py
+
+Sometimes you want all instances of your React component to have some default set of props.  For instance, our `<HvstApp>` JSX compnent (that renders the left nav and title bar) always have a `user={name:'Derek', id:12345}` property representing the logged in user.  It would be annoying to always have to declare it like this:
+
+```python
+br.HvstApp({'user': bottle.request.current_user.to_json()})
+```
+
+Since we have that component in almost every HTML endpoint in our app.  So for common variables like this, bottle-react will look for a module `jsx_props`.  If that module has a function defined matching `init` + the React class name, whatever that function returns will be the default props for that object.  (Any props passed in when creating the object will override these default props.)  For example, if in `jsx_props.py` we define:
+
+```python
+def initHvstApp():
+  return {'user': bottle.request.current_user.to_json()}
+```
+
+Anytime after if we we create a `br.HvstApp()` it'll have the `user` prop already associated with it.
