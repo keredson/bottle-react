@@ -42,7 +42,7 @@ Why did we develop this?  We had several goals:
 
 - [x] Don't cross-compile javascript during development.
 
-Compiling with `webpack` is too slow for non-trivial applications.  (One of the nicities about web developement it `alt-Tab`/`ctrl-R` to see your changes.)  And it causes too many suble bugs between dev and prod that waste developer resources.
+Compiling with `webpack` is too slow for non-trivial applications.  (One of the niceties about web developement it `alt-Tab`/`ctrl-R` to see your changes.)  And it causes too many subtle bugs between dev and prod that waste developer resources.
 
 - [x] Don't merge all javascript into one ginormous bundle.
 
