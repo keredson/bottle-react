@@ -136,4 +136,4 @@ def initHvstApp():
   return {'user': bottle.request.current_user.to_json()}
 ```
 
-Anytime after if we we create a `br.HvstApp()` it'll have the `user` prop already associated with it.
+Now if we create a `br.HvstApp()` it'll have the `user` prop already associated with it.
