@@ -48,5 +48,75 @@ The returned value is typically either used as a child in another bottle-react c
 Once you have your react component defined you need to wrap it in an HTML shell returnable from Bottle and readable by the browser.  You do this with `br.render_html()`.  It is defined as:
 
 ```python
-def render_html(react_node, **options):
+def render_html(react_node, **kwargs):
 ```
+
+By default `render_html` looks for a template in your Bottle template path (usually the directory `views`) called `bottlereact.tpl`.  This is a normal Bottle template you can define to your liking.  a minimal one would be:
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{title}}</title>
+    {{! deps }}
+  </head>
+  <body>
+    <div id="__body__">
+      Loading...
+    </div>
+  </body>
+{{! init }}
+</html>
+```
+
+Note the two bottle params that are passed in `deps` and `init`.  `deps` should be placed in side the `<head>` of your template.  `init` should go after the `</body>` tag.  And the root element your React component will bind to will be the element with the `id="__body__"`.
+
+In the given `HelloWorld` example, the `deps` variable will look like this (if in dev mode):
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.min.js"></script>
+<script src="/__br_assets__/bottlereact.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.0/react-with-addons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.0/react-dom.min.js"></script>
+<script type="text/babel" src="/__br_assets__/hello_world.jsx"></script>
+```
+
+Or this (if in prod mode):
+
+```html
+<script src="/__br_assets__/af6f7e0a7c117244-bottlereact.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.0/react-with-addons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.0/react-dom.min.js"></script>
+<script src="/__br_assets__/ca436611dff6b176-c6c76af11f18e376-hello_world.js"></script>
+```
+The two CDN resources are there because in our `HelloWorld` example JSX file we have:
+```javascript
+// require https://cdnjs.cloudflare.com/ajax/libs/react/15.4.0/react-with-addons.min.js
+// require https://cdnjs.cloudflare.com/ajax/libs/react/15.4.0/react-dom.min.js
+```
+
+You could just as easily have them in the `assets` folder, which could be included like:
+```javascript
+// require react-with-addons.min.js
+// require react-dom.min.js
+```
+
+The `init` variable will look like this:
+```html
+<script>
+  bottlereact._onLoad(["HelloWorld"], function() {
+    ReactDOM.render(
+      React.createElement(bottlereact.HelloWorld,{"name": "World"},[]),
+      document.getElementById('__body__')
+    );
+  });
+</script>
+```
+
+The function `bottlereact._onLoad` (defined in `bottlereact.js`) takes a list of classes that need to load before the compnent can be rendered, and a callback to be run when they are loaded.  the callback contains normal React code to initialize your component.
+
+We talked internally about (in `prod` mode) having `render_html()` taking advantage of React's ability to pre-render the HTML, but in testing we've found the brower renders the JSX extremely fast already.  So we haven't done it yet, but it's designed to be added in the future.
+
+If you want to use another template, pass in `template='template_fn'` into `render_html()` and bottle-react will use that template instead.
+
+Any additional `kwargs` passed into `render_html()` will be passed through to the template.  For example, `title='My Site'` is very common.
+
