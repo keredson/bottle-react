@@ -3,7 +3,7 @@
 ## Description
 This library allows you to return react components from Bottle.  It currently powers https://www.hvst.com/.
 
-## Example
+## Example (Hello World)
 
 Assume you have a normal JSX file `hello_world.jsx`:
 ```js
@@ -34,7 +34,37 @@ def root():
   )
 ```
 
-You will have a functioning bottle+react app.
+When your route is called the react component will be rendered.  See [examples/hello_world](examples/hello_world) for details.
+
+## Principles
+
+Why did we develop this?  We had several goals:
+
+- [x] Don't cross-compile javascript during development.
+
+Compiling with `webpack` is too slow for non-trivial applications.  (One of the niceties about web developement it `alt-Tab`/`ctrl-R` to see your changes.)  And it causes too many subtle bugs between dev and prod that waste developer resources.
+
+- [x] Don't merge all javascript into one ginormous bundle.
+
+Making your user download a 1.5Mb `kitchensink.min.js` every deployment is horrible.  And 99% of it isn't used on most pages.  Loading 40kb total from multiple resources with HTTP keep-alive takes just a few ms per file and is much faster in practice.
+
+- [x] React components should be composable from Python.
+
+A lot of our routes look like this:
+
+```python
+@app.get('/something')
+def something():
+  user = bottle.request.current_user
+  return br.render_html(
+    br.HvstApp({'user':user.to_dict()}, [
+      br.HelloWorld({'name':user.name}),
+    ])
+  )
+```
+
+The React component `HvstApp` (which renders the title bar and left nav) is taking two parameters.  The first is a `dict` that will be passed as the JSON props to the React component.  The second is a `list` that will become the children.  This list can (and usually does) contain other React components.
+
 
 ## Install
 ```python
@@ -42,13 +72,4 @@ sudo pip install bottle-react
 ```
 ## Documentation
 
-`bottlereact.BottleReact()` takes several keyword arguments, all of which are optional:
-
-| KW Argument | Description | Default |
-| ----------- | ----------- | ------- |
-| `prod` | Are we in production?  If so, compile all JSX into pure javascript.  Otherwise serve the raw JSX with the babel-core shim. | False |
-| `jsx_path` | Where bottle-react should search for JSX files. | `jsx` |
-| `asset_path` | Where bottle-react should search for javascript/css/etc files. | `assets` |
-| `work_path` | Where bottle-react outputs static js files when in production mode (if you want to serve them statically). | `/tmp/bottlereact` |
-| `jsx_path` | Where bottle-react should search for JSX files. | `jsx` |
-| `verbose` | Verbose mode. | `not prod` |
+See the [full documentation](DOCS.md).
