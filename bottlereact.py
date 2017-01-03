@@ -33,7 +33,7 @@ except ImportError:
   pass # need to not error here for setup.py to get the version
 
 
-__version__='0.1.3'
+__version__='0.2.0'
 
 
 
@@ -150,18 +150,18 @@ class BottleReact(object):
     return '/__br_assets__/%s' % self._fn2hash.get(fn, fn)
 
   def _load_fn_to_hash_mapping(self, path, selector, dest=None):
+    path = os.path.abspath(path)
     ret = {}
     if not os.path.isdir(path): return ret
     if not os.listdir(path): return ret
-    path = os.path.join(path, selector)
-    output = subprocess.check_output(['sha256sum %s' % path], shell=True)
+    output = subprocess.check_output(['find %s -name \'%s\' -type f -print0 | xargs -0 -n 100 sha256sum' % (path, selector)], shell=True)
     for line in output.decode("utf8").split('\n'):
       line = line.strip()
       if not line: continue
       hsh, fn = line.split('  ', 1)
       hsh = hsh[:16]
-      base_fn = os.path.basename(fn)
-      hashed_fn = '%s-%s' % (hsh, base_fn)
+      base_fn = os.path.relpath(fn, path)
+      hashed_fn = '%s-%s' % (hsh, base_fn.replace('/','__'))
       ret[base_fn] = hashed_fn
       tmp_fn = os.path.join(dest, hashed_fn)
       if not os.path.exists(tmp_fn):
