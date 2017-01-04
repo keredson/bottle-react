@@ -42,10 +42,11 @@ BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.m
 
 class BottleReact(object):
  
-  def __init__(self, app, prod=False, jsx_path='jsx', asset_path='assets', work_path='/tmp/bottlereact', verbose=None):
+  def __init__(self, app, prod=False, jsx_path='jsx', asset_path='assets', work_path='/tmp/bottlereact', verbose=None, default_render_html_kwargs=None):
     self.app = app
     self.prod = prod
     self.verbose = not prod if verbose is None else verbose
+    self.default_render_html_kwargs = default_render_html_kwargs
     self.jsx_path = jsx_path
     self.hashed_path = os.path.join(work_path, 'hashed-assets')
     self.genned_path = os.path.join(work_path, 'genned-assets')
@@ -168,9 +169,20 @@ class BottleReact(object):
         shutil.copy(fn, tmp_fn)
         if self.verbose: print('copied', fn, 'to', tmp_fn)
     return ret
+  
+  def calc_render_html_kwargs(self, kwargs):
+    if self.default_render_html_kwargs is None:
+      return kwargs
+    if hasattr(self.default_render_html_kwargs, '__call__'):
+      ret = self.default_render_html_kwargs()
+    else:
+      ret = dict(self.default_render_html_kwargs.items())
+    ret.update(kwargs)
+    return ret
 
   def render_html(self, react_node, **kwargs):
-    template = kwargs.get('kwargs', 'bottlereact')
+    kwargs = self.calc_render_html_kwargs(kwargs)
+    template = kwargs.get('template', 'bottlereact')
     react_js = react_node.to_javascript()
     deps = self._build_dep_list(react_node.get_js_files())
     classes = _make_json_string_browser_safe(json.dumps(list(react_node.get_react_classes())))

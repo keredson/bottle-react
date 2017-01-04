@@ -1,0 +1,4 @@
+<html>
+{{! deps }}
+{{! init }}
+</html>
