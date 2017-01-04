@@ -27,6 +27,7 @@ Where `PROD` is a boolean determining if the app is running in production or not
 | `work_path` | Where bottle-react outputs static js files when in production mode (if you want to serve them statically). | `/tmp/bottlereact` |
 | `jsx_path` | Where bottle-react should search for JSX files. | `jsx` |
 | `verbose` | Verbose mode. | `not prod` |
+| `default_render_html_kwargs` | Default kwargs to be passed to all calls to `render_html`.  For example, `title`. Can be either a `dict` or a function that returns a `dict`. | `None` |
 
 ## `br.HelloWorld()`
 
