@@ -33,7 +33,7 @@ except ImportError:
   pass # need to not error here for setup.py to get the version
 
 
-__version__='0.3.0'
+__version__='0.4.0'
 
 
 
@@ -42,7 +42,7 @@ BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.m
 
 class BottleReact(object):
  
-  def __init__(self, app, prod=False, jsx_path='jsx', asset_path='assets', work_path='/tmp/bottlereact', verbose=None, default_render_html_kwargs=None):
+  def __init__(self, app, prod=False, jsx_path='jsx', asset_path='assets', work_path='/tmp/bottlereact', verbose=None, default_render_html_kwargs=None, harmony=True):
     self.app = app
     self.prod = prod
     self.verbose = not prod if verbose is None else verbose
@@ -51,6 +51,7 @@ class BottleReact(object):
     self.hashed_path = os.path.join(work_path, 'hashed-assets')
     self.genned_path = os.path.join(work_path, 'genned-assets')
     self.asset_path = asset_path
+    self.harmony = harmony
     self._reqs = collections.defaultdict(list)
     
     if not os.path.isdir(self.jsx_path):
@@ -111,7 +112,7 @@ class BottleReact(object):
       for jsx_fn, jsx_hashed_fn in jsx2hash.items():
         jsx_converted_fn = os.path.join(self.genned_path, jsx_hashed_fn[:-1])
         if not os.path.exists(jsx_converted_fn) or os.stat(jsx_converted_fn).st_size==0:
-          transformer.transform(os.path.join(self.genned_path, jsx_hashed_fn), js_path=jsx_converted_fn)
+          transformer.transform(os.path.join(self.genned_path, jsx_hashed_fn), js_path=jsx_converted_fn, harmony=self.harmony)
 
       # bottlereact.js
       with open(os.path.join(self.genned_path, 'bottlereact.js'),'w') as f:
