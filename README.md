@@ -70,6 +70,17 @@ The React component `HvstApp` (which renders the title bar and left nav) is taki
 ```python
 sudo pip install bottle-react
 ```
+
+## NGINX Integration
+By default (in production mode) `bottle-react` writes to `/tmp/bottlereact/hashed-assets/`.  To make NGINX serve these files directly, use the following:
+
+```
+  location ^~ /__br_assets__/ {
+    alias /tmp/bottlereact/hashed-assets/;
+    expires max;
+  }
+```
+
 ## Documentation
 
 See the [full documentation](DOCS.md).
