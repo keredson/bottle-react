@@ -33,7 +33,7 @@ except ImportError:
   pass # need to not error here for setup.py to get the version
 
 
-__version__='0.4.0'
+__version__='0.4.1'
 
 
 
@@ -77,6 +77,7 @@ class BottleReact(object):
 
 
     # load all JSX files
+    classes_by_file = collections.defaultdict(list)
     for fn in sorted(os.listdir(self.jsx_path)):
       if not fn.endswith('.jsx'): continue
       with open(os.path.join(self.jsx_path, fn), 'r') as f:
@@ -84,16 +85,19 @@ class BottleReact(object):
           if 'React.createClass' in line:
             if '=' not in line: continue
             react_class = line.split('=')[0].strip().split()[-1]
-            if self.verbose: print('found react class', react_class, 'in', fn)
+            classes_by_file[fn].append(react_class)
             self.__dict__[react_class] = _ReactClass(react_class, fn)
           if 'extends React.Component' in line:
             if 'class' not in line: continue
             react_class = line[line.find('class')+5:line.find('extends')].strip()
-            if self.verbose: print('found es6 react class', react_class, 'in', fn)
+            classes_by_file[fn].append(react_class)
             self.__dict__[react_class] = _ReactClass(react_class, fn)
           if line.startswith('// require '):
             req = line[len('// require '):].strip()
             self._reqs[fn].append(req)
+
+    if self.verbose:
+      print('BR classes by file:', dict(classes_by_file.items()))
 
     self._fn2hash = {}
     if prod:
@@ -129,9 +133,9 @@ class BottleReact(object):
       # get the hashed name of 'bottlereact.js'
       self._fn2hash['bottlereact.js'] = jsxjs2hash['bottlereact.js']
 
-      if self.verbose: print('_fn2hash', self._fn2hash)
+      if self.verbose: print('BR file hashes:', self._fn2hash)
 
-    if self.verbose: print('_reqs', self._reqs)
+    if self.verbose: print('BR file requirements: ', dict(self._reqs.items()))
 
 
   def _build_dep_list(self, files):
@@ -168,7 +172,7 @@ class BottleReact(object):
       tmp_fn = os.path.join(dest, hashed_fn)
       if not os.path.exists(tmp_fn):
         shutil.copy(fn, tmp_fn)
-        if self.verbose: print('copied', fn, 'to', tmp_fn)
+        if self.verbose: print('BR copied', fn, 'to', tmp_fn)
     return ret
   
   def calc_render_html_kwargs(self, kwargs):
