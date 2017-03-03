@@ -32,8 +32,13 @@ try:
 except ImportError:
   pass # need to not error here for setup.py to get the version
 
+# python3 compat.
+try:
+  basestring
+except NameError:
+  basestring = str
 
-__version__='0.4.1'
+__version__='0.4.2'
 
 
 
