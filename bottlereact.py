@@ -25,7 +25,7 @@
 
 from __future__ import print_function
 
-import collections, json, os, re, shutil, subprocess
+import collections, json, os, re, shutil, socket, subprocess, tempfile, threading, time, urllib
 try:
   import bottle
   import react.jsx
@@ -38,26 +38,38 @@ try:
 except NameError:
   basestring = str
 
+try:
+  from urllib.request import urlopen, urlretrieve
+except ImportError:
+  from urllib import urlopen, urlretrieve
+
+
 __version__='0.4.2'
 
 
 
 __ALL__ = ['BottleReact','__version__']
 BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.min.js'
+REACT_SERVER = 'https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react-dom-server.js'
 
 class BottleReact(object):
  
-  def __init__(self, app, prod=False, jsx_path='jsx', asset_path='assets', work_path='/tmp/bottlereact', verbose=None, default_render_html_kwargs=None, harmony=True):
+  def __init__(self, app, prod=False, jsx_path='jsx', asset_path='assets', work_path='/tmp/bottlereact', verbose=None, default_render_html_kwargs=None, harmony=True, render_server=None):
     self.app = app
     self.prod = prod
+    self._render_server = render_server if render_server is not None else self.prod
     self.verbose = not prod if verbose is None else verbose
     self.default_render_html_kwargs = default_render_html_kwargs
     self.jsx_path = jsx_path
     self.hashed_path = os.path.join(work_path, 'hashed-assets')
     self.genned_path = os.path.join(work_path, 'genned-assets')
+    self.ext_path = os.path.join(work_path, 'ext-assets')
     self.asset_path = asset_path
     self.harmony = harmony
     self._reqs = collections.defaultdict(list)
+    self._ctxs = {}
+    self._ctx_open = {}
+    self._ctx_lock = threading.Lock()
     
     if not os.path.isdir(self.jsx_path):
       raise Exception('Directory %s not found - please create it or set the jsx_path parameter.' % repr(self.jsx_path))
@@ -109,13 +121,27 @@ class BottleReact(object):
       transformer = react.jsx.JSXTransformer()
     
       # confirm tmp paths exist
-      for path in [self.hashed_path, self.genned_path]:
+      for path in [self.hashed_path, self.genned_path, self.ext_path]:
         if not os.path.isdir(path):
           os.makedirs(path)
-
+      
       # unfiltered assets
       self._fn2hash = self._load_fn_to_hash_mapping(self.asset_path, '*', dest=self.hashed_path)
 
+      # download external resources
+      for fn, deps in self._reqs.items():
+        for dep in deps:
+          if dep.startswith('http://') or dep.startswith('https://'):
+            local_path = os.path.join(self.ext_path, _make_string_fn_safe(dep))
+            if not os.path.isfile(local_path):
+              if self.verbose: print('BR downloading:', dep)
+              try:
+                urlretrieve(dep, local_path)
+              except urllib.error.HTTPError as e:
+                print('BR warning could not download', dep, e)
+      urlretrieve(REACT_SERVER, os.path.join(self.ext_path, _make_string_fn_safe(REACT_SERVER)))
+      self._fn2hash.update(self._load_fn_to_hash_mapping(self.ext_path, '*', dest=self.hashed_path))
+            
       # jsx assets
       jsx2hash = self._load_fn_to_hash_mapping(self.jsx_path, '*.jsx', dest=self.genned_path)
       for jsx_fn, jsx_hashed_fn in jsx2hash.items():
@@ -144,14 +170,14 @@ class BottleReact(object):
 
 
   def _build_dep_list(self, files):
-    files = set(files)
+    files = _dedup(files)
     deps = collections.OrderedDict()
     while len(files):
       fn = files.pop()
       if fn not in deps:
         deps[fn] = True
         for fn2 in self._reqs[fn]:
-          files.add(fn2)
+          files.append(fn2)
     deps['bottlereact.js'] = True
     if not self.prod:
       deps[BABEL_CORE] = True
@@ -189,6 +215,77 @@ class BottleReact(object):
       ret = dict(self.default_render_html_kwargs.items())
     ret.update(kwargs)
     return ret
+  
+  def get_js_context(self, deps):
+    port = self._ctxs.get(deps)
+    if port: return port
+    with self._ctx_lock:
+      port = self._ctxs.get(deps)
+      if port: return port
+      port = self.build_js_context(deps)
+      self._ctxs[deps] = port
+      return port
+    
+  def build_js_context(self, deps):
+    port = _get_free_tcp_port()
+    if self.verbose: print('BR building nodejs server http://localhost:%i'%port)
+    nodejs_fn = tempfile.mkstemp(suffix='.js', prefix='br_ctx_')[1]
+    with open(nodejs_fn,'w') as of:
+      of.write('''
+        const _br_http = require('http');
+        // don't look like nodejs
+        exports = define = require = undefined;
+      ''')
+      for dep in deps:
+        if dep.startswith('http://') or dep.startswith('https://'):
+          dep = _make_string_fn_safe(dep)
+        js_path = self._fn2hash[dep]
+        with open(os.path.join(self.hashed_path,js_path)) as f:
+          print('adding ', js_path)
+          of.write('\n\n// BR importing: %s\n\n' % js_path)
+          of.write(f.read())
+      with open(os.path.join(self.hashed_path,self._fn2hash[_make_string_fn_safe(REACT_SERVER)])) as f:
+        of.write('\n\n// BR importing: %s\n\n' % _make_string_fn_safe(REACT_SERVER))
+        print('adding ', _make_string_fn_safe(REACT_SERVER))
+        of.write(f.read())
+      
+      of.write('''
+        _br_http.createServer((request, response) => {  
+          var body = [];
+          request.on('error', function(err) {
+            console.error('BR nodejs error:', err);
+          }).on('data', function(chunk) {
+            body.push(chunk);
+          }).on('end', function() {
+            body = Buffer.concat(body).toString();
+            var react_node = eval(body);
+            var ret = ReactDOMServer.renderToString(react_node);
+            response.writeHead(200);
+            response.end(ret);
+          });
+        }).listen(%i, 'localhost', (err) => {  
+          if (err) {
+            return console.log('something bad happened', err)
+          }
+          console.log(`BR nodejs server is listening on http://localhost:%i`)
+        })
+      ''' % (port,port))
+    subprocess.Popen(['nodejs', nodejs_fn])
+    return port
+  
+  def render_server(self, deps, react_js):
+    deps = tuple(deps)
+    port = self.get_js_context(deps)
+    for i in range(10):
+      try:
+        with urlopen('http://localhost:%i' % port, react_js.encode()) as f:
+          ret = f.read()
+        return ret
+      except urllib.error.URLError as e:
+        pass
+      time.sleep(.5)
+    raise Exception('could not contact nodejs')
+    
 
   def render_html(self, react_node, **kwargs):
     kwargs = self.calc_render_html_kwargs(kwargs)
@@ -224,12 +321,30 @@ class BottleReact(object):
       'init': init,
       'prod': self.prod,
       'asset_path': self.get_asset_path,
+      'body': '',
     })
+    if self.prod and self._render_server:
+      kwargs['body'] = self.render_server(deps, react_js)
     return bottle.template(template, **kwargs)
 
 
 def _make_json_string_browser_safe(s):
   return s.replace('</', '<\\/')
+  
+def _make_string_fn_safe(s):
+  return "".join([c if re.match(r'[\w.]', c) else '_' for c in s])
+
+def _get_free_tcp_port():
+  tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+  tcp.bind(('localhost', 0))
+  addr, port = tcp.getsockname()
+  tcp.close()
+  return port
+
+def _dedup(seq):
+  seen = set()
+  seen_add = seen.add
+  return [x for x in seq if not (x in seen or seen_add(x))]
 
 
 class _ReactNode(object):
@@ -240,8 +355,8 @@ class _ReactNode(object):
     self.children = children if children else []
 
   def get_js_files(self, files=None):
-    if files is None: files = set()
-    files.add(self.react_class.fn)
+    if files is None: files = []
+    files.append(self.react_class.fn)
     for child in self.children:
       if isinstance(child, _ReactNode):
         child.get_js_files(files)
