@@ -38,7 +38,7 @@ try:
 except NameError:
   basestring = str
 
-__version__='0.4.2'
+__version__='0.4.3'
 
 
 
@@ -314,7 +314,7 @@ var checkDeps = function() {
       var f = pending_deps[i][1];
       pending_deps.splice(i,1);
       --i;
-      f();
+      setTimeout(f, 0);
     }
   }
 };
