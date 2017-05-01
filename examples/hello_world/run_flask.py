@@ -2,7 +2,7 @@ import sys
 from flask import Flask
 from bottlereact import BottleReact
 
-PROD = '--prod' in sys.argv or True
+PROD = '--prod' in sys.argv
 
 app = Flask(__name__)
 br = BottleReact(app, prod=PROD)
