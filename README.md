@@ -1,7 +1,9 @@
-# bottle-react
+# Bottle-React
+
+***NOW SUPPORTS FLASK!*** See [examples/hello_world/run_flask.py](examples/hello_world/run_flask.py).
 
 ## Description
-This library allows you to return react components from Bottle.  It currently powers https://www.hvst.com/.
+This library allows you to return react components from either Bottle or Flask.  It currently powers https://www.hvst.com/.
 
 ## Example (Hello World)
 

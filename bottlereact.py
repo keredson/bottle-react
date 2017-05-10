@@ -37,14 +37,21 @@ try:
   basestring
 except NameError:
   basestring = str
-
 try:
   from urllib.request import urlopen, urlretrieve
 except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='0.4.2'
+__version__='0.5.0'
+
+
+FLASK_AROUND = False
+try:
+  import flask
+  FLASK_AROUND = True
+except ImportError:
+  pass
 
 
 
@@ -72,24 +79,43 @@ class BottleReact(object):
     
     if not os.path.isdir(self.jsx_path):
       raise Exception('Directory %s not found - please create it or set the jsx_path parameter.' % repr(self.jsx_path))
-
-    if self.prod:
-      @app.get('/__br_assets__/<path:path>')
-      def _serve__br_assets(path):
-        response = bottle.static_file(path, root=self.hashed_path)
-        response.set_header("Cache-Control", "public, max-age=31536000") # one year
-        return response
+    
+    if FLASK_AROUND and isinstance(app, flask.app.Flask):
+      if self.prod:
+        @app.route('/__br_assets__/<path:path>')
+        def _serve__br_assets(path):
+          response = flask.send_from_directory(self.hashed_path, path)
+          response.headers["Cache-Control"] = "public, max-age=31536000" # one year
+          return response
+      else:
+        @app.route('/__br_assets__/<path:path>')
+        def _serve__br_assets(path):
+          if path=='bottlereact.js':
+            return flask.Response(bottlereact_js, mimetype='text/javascript')
+          elif path.endswith('.jsx'):
+            response = flask.make_response(flask.send_from_directory(self.jsx_path, path))
+            response.headers['Content-Type'] = 'text/babel'
+            return response
+          else:
+            return flask.send_from_directory(self.asset_path, path)
     else:
-      @app.get('/__br_assets__/<path:path>')
-      def _serve__br_assets(path):
-        if path=='bottlereact.js':
-          bottle.response.set_header('Content-Type', 'text/javascript')
-          return bottlereact_js
-        elif path.endswith('.jsx'):
-          bottle.response.set_header('Content-Type', 'text/babel')
-          return bottle.static_file(path, root=self.jsx_path)
-        else:
-          return bottle.static_file(path, root=self.asset_path)
+      if self.prod:
+        @app.get('/__br_assets__/<path:path>')
+        def _serve__br_assets(path):
+          response = bottle.static_file(path, root=self.hashed_path)
+          response.set_header("Cache-Control", "public, max-age=31536000") # one year
+          return response
+      else:
+        @app.get('/__br_assets__/<path:path>')
+        def _serve__br_assets(path):
+          if path=='bottlereact.js':
+            bottle.response.set_header('Content-Type', 'text/javascript')
+            return bottlereact_js
+          elif path.endswith('.jsx'):
+            bottle.response.set_header('Content-Type', 'text/babel')
+            return bottle.static_file(path, root=self.jsx_path)
+          else:
+            return bottle.static_file(path, root=self.asset_path)
 
 
     # load all JSX files
@@ -428,7 +454,7 @@ var checkDeps = function() {
       var f = pending_deps[i][1];
       pending_deps.splice(i,1);
       --i;
-      f();
+      setTimeout(f, 0);
     }
   }
 };
