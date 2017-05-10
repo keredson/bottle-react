@@ -28,6 +28,7 @@ Where `PROD` is a boolean determining if the app is running in production or not
 | `jsx_path` | Where bottle-react should search for JSX files. | `jsx` |
 | `verbose` | Verbose mode. | `not prod` |
 | `default_render_html_kwargs` | Default kwargs to be passed to all calls to `render_html`.  For example, `title`. Can be either a `dict` or a function that returns a `dict`. | `None` |
+| `render_server` | Enable server-side rendering.  Can be a `bool` or a function.  Requires `prod=True` to have an effect. | Currently `False` but that may change. |
 
 ## `br.HelloWorld()`
 
