@@ -9,9 +9,7 @@
 
   <body>
     <div id="__body__">
-      <center style='margin:4em 0;'>
-        Loading...
-      </center>
+      {{! body or "<center style='margin:4em 0;'>Loading...</center>" }}
     </div>
   </body>
   

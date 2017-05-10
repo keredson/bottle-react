@@ -4,7 +4,8 @@ from bottlereact import BottleReact
 PROD = '--prod' in sys.argv
 
 app = bottle.Bottle()
-br = BottleReact(app, prod=PROD)
+#br = BottleReact(app, prod=PROD, render_server=False)
+br = BottleReact(app, prod=PROD, verbose=True)
 
 @app.get('/')
 def root():
