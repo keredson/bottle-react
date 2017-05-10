@@ -50,7 +50,6 @@ __version__='0.4.2'
 
 __ALL__ = ['BottleReact','__version__']
 BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.min.js'
-REACT_SERVER = 'https://cdnjs.cloudflare.com/ajax/libs/react/15.2.0/react-dom-server.js'
 
 class BottleReact(object):
  
@@ -139,7 +138,6 @@ class BottleReact(object):
                 urlretrieve(dep, local_path)
               except urllib.error.HTTPError as e:
                 print('BR warning could not download', dep, e)
-      urlretrieve(REACT_SERVER, os.path.join(self.ext_path, _make_string_fn_safe(REACT_SERVER)))
       self._fn2hash.update(self._load_fn_to_hash_mapping(self.ext_path, '*', dest=self.hashed_path))
             
       # jsx assets
@@ -244,12 +242,9 @@ class BottleReact(object):
           print('adding ', js_path)
           of.write('\n\n// BR importing: %s\n\n' % js_path)
           of.write(f.read())
-      with open(os.path.join(self.hashed_path,self._fn2hash[_make_string_fn_safe(REACT_SERVER)])) as f:
-        of.write('\n\n// BR importing: %s\n\n' % _make_string_fn_safe(REACT_SERVER))
-        print('adding ', _make_string_fn_safe(REACT_SERVER))
-        of.write(f.read())
-      
+
       of.write('''
+        var ReactDOMServer = React.__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         _br_http.createServer((request, response) => {  
           var body = [];
           request.on('error', function(err) {
@@ -270,6 +265,7 @@ class BottleReact(object):
           console.log(`BR nodejs server is listening on http://localhost:%i`)
         })
       ''' % (port,port))
+
     subprocess.Popen(['nodejs', nodejs_fn])
     return port
   
@@ -290,6 +286,7 @@ class BottleReact(object):
   def render_html(self, react_node, **kwargs):
     kwargs = self.calc_render_html_kwargs(kwargs)
     template = kwargs.get('template', 'bottlereact')
+    render_server = kwargs.get('render_server', self._render_server)
     react_js = react_node.to_javascript()
     deps = self._build_dep_list(react_node.get_js_files())
     classes = _make_json_string_browser_safe(json.dumps(list(react_node.get_react_classes())))
@@ -323,7 +320,9 @@ class BottleReact(object):
       'asset_path': self.get_asset_path,
       'body': '',
     })
-    if self.prod and self._render_server:
+    if callable(render_server):
+      render_server = render_server()
+    if self.prod and render_server:
       kwargs['body'] = self.render_server(deps, react_js)
     return bottle.template(template, **kwargs)
 
