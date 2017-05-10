@@ -56,7 +56,7 @@ class BottleReact(object):
   def __init__(self, app, prod=False, jsx_path='jsx', asset_path='assets', work_path='/tmp/bottlereact', verbose=None, default_render_html_kwargs=None, harmony=True, render_server=None):
     self.app = app
     self.prod = prod
-    self._render_server = render_server if render_server is not None else self.prod
+    self._render_server = render_server # if render_server is not None else self.prod
     self.verbose = not prod if verbose is None else verbose
     self.default_render_html_kwargs = default_render_html_kwargs
     self.jsx_path = jsx_path
