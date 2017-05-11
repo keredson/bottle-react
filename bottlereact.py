@@ -43,7 +43,7 @@ except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='0.6.1'
+__version__='0.6.2'
 
 
 FLASK_AROUND = False
@@ -199,10 +199,9 @@ class BottleReact(object):
     while len(files):
       fn = files.pop()
       if fn not in deps:
-        deps[fn] = True
-        for fn2 in reversed(self._reqs[fn]):
-          deps[fn2] = True
+        for fn2 in self._reqs[fn]:
           files.append(fn2)
+        deps[fn] = True
     deps['bottlereact.js'] = True
     if not self.prod:
       deps[BABEL_CORE] = True
@@ -254,7 +253,7 @@ class BottleReact(object):
   def build_js_context(self, deps):
     port = _get_free_tcp_port()
     if self.verbose: print('BR building nodejs server http://localhost:%i'%port)
-    nodejs_fn = tempfile.mkstemp(suffix='.js', prefix='br_ctx_')[1]
+    nodejs_fn = tempfile.mkstemp(suffix='.js', prefix='br_ctx_p%i_'%port)[1]
     with open(nodejs_fn,'w') as of:
       of.write('''
         const _br_http = require('http');
