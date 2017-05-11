@@ -43,7 +43,7 @@ except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='0.6.0'
+__version__='0.6.1'
 
 
 FLASK_AROUND = False
@@ -200,7 +200,8 @@ class BottleReact(object):
       fn = files.pop()
       if fn not in deps:
         deps[fn] = True
-        for fn2 in self._reqs[fn]:
+        for fn2 in reversed(self._reqs[fn]):
+          deps[fn2] = True
           files.append(fn2)
     deps['bottlereact.js'] = True
     if not self.prod:
