@@ -43,7 +43,7 @@ except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='0.6.3'
+__version__='0.6.4'
 
 
 FLASK_AROUND = False
@@ -280,11 +280,17 @@ class BottleReact(object):
           }).on('data', function(chunk) {
             body.push(chunk);
           }).on('end', function() {
-            body = Buffer.concat(body).toString();
-            var react_node = eval(body);
-            var ret = ReactDOMServer.renderToString(react_node);
-            response.writeHead(200);
-            response.end(ret);
+            try {
+              body = Buffer.concat(body).toString();
+              var react_node = eval(body);
+              var ret = ReactDOMServer.renderToString(react_node);
+              response.writeHead(200);
+              response.end(ret);
+            } catch(err) {
+              console.log(err)
+              response.writeHead(500);
+              response.end(String(err) +'\\n\\n'+ err.stack);
+            }
           });
         }).listen(%i, 'localhost', (err) => {  
           if (err) {
@@ -306,8 +312,11 @@ class BottleReact(object):
           ret = f.read()
         return ret
       except urllib.error.URLError as e:
-        pass
-      time.sleep(.5)
+        if isinstance(e.reason, ConnectionRefusedError):
+          time.sleep(.5)
+          continue
+        else:
+          raise Exception(e.file.read().decode())
     raise Exception('could not contact nodejs')
     
 
