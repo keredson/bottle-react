@@ -43,7 +43,7 @@ except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='0.6.2'
+__version__='0.6.3'
 
 
 FLASK_AROUND = False
@@ -194,19 +194,21 @@ class BottleReact(object):
 
 
   def _build_dep_list(self, files):
-    files = _dedup(files)
-    deps = collections.OrderedDict()
-    while len(files):
-      fn = files.pop()
-      if fn not in deps:
-        for fn2 in self._reqs[fn]:
-          files.append(fn2)
-        deps[fn] = True
-    deps['bottlereact.js'] = True
+    output = ['bottlereact.js']
     if not self.prod:
-      deps[BABEL_CORE] = True
-    return list(reversed(deps.keys()))
+      output.append(BABEL_CORE)
+    seen = set(output)
+    for fn in files:
+      self._build_dep_list_internal(fn, seen, output)
+    return output
 
+  def _build_dep_list_internal(self, fn, seen, output):
+    if fn in seen: return
+    for fn2 in self._reqs[fn]:
+      self._build_dep_list_internal(fn2, seen, output)
+    output.append(fn)
+    seen.add(fn)
+    
   def get_asset_path(self, fn):
     return '/__br_assets__/%s' % self._fn2hash.get(fn, fn)
 
