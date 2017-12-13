@@ -72,8 +72,9 @@ class BottleReact(object):
     self.app = app
     self.prod = prod
     self._render_server = render_server
+    self._inited_render_server = False
     if render_server:
-      self._NODE_PATH = subprocess.check_output(['npm', 'root', '--quiet', '-g']).decode().strip()
+      self._init_render_server()
     self.verbose = not prod if verbose is None else verbose
     self.default_render_html_kwargs = default_render_html_kwargs
     self.jsx_path = jsx_path
@@ -201,6 +202,10 @@ class BottleReact(object):
 
     if self.verbose: print('BR file requirements: ', dict(self._reqs.items()))
 
+  def _init_render_server(self):
+    if self._inited_render_server: return
+    self._NODE_PATH = subprocess.check_output(['npm', 'root', '--quiet', '-g']).decode().strip()
+    self._inited_render_server = True
 
   def _build_dep_list(self, files):
     output = ['bottlereact.js']
@@ -266,18 +271,41 @@ class BottleReact(object):
     if self.verbose: print('BR building nodejs server http://localhost:%i'%port)
     fd, nodejs_fn = tempfile.mkstemp(suffix='.js', prefix='br_ctx_p%i_'%port)
     os.close(fd)
+    if not self.prod:
+      transformer = react.jsx.JSXTransformer()
     with open(nodejs_fn,'w') as of:
       of.write(FAKE_BROWSER_JS)
       for dep in deps:
         if dep.startswith('http://') or dep.startswith('https://'):
           dep = _make_string_fn_safe(dep)
-        js_path = self._fn2hash[dep]
-        if js_path.endswith('.js'):
-          with open(os.path.join(self.hashed_path,js_path)) as f:
+        if dep=='bottlereact.js':
+          of.write(BOTTLEREACT_JS)
+        elif dep.endswith('_browser.js') or dep.endswith('_browser.min.js'):
+          pass
+        elif dep.endswith('.js'):
+          if self.prod:
+            js_path = os.path.join(self.hashed_path, self._fn2hash[dep])
+          else:
+            js_path = os.path.join(self.asset_path, dep)
+          with open(js_path) as f:
             print('adding ', js_path)
             of.write('\n\n// BR importing: %s\n\n' % js_path)
             of.write(f.read())
-          
+        elif dep.endswith('.jsx'):
+          if self.prod:
+            js_path = os.path.join(self.hashed_path, self._fn2hash[dep])
+            print('adding ', js_path)
+            with open(js_path) as f:
+              of.write('\n\n// BR importing: %s\n\n' % js_path)
+              of.write(f.read())
+          else:
+            js_path = os.path.join(self.jsx_path, dep)
+            with tempfile.NamedTemporaryFile(suffix='.js') as f:
+              transformer.transform(js_path, js_path=f.name, harmony=self.harmony)
+              with open(f.name) as f2:
+                print('adding ', f.name, 'from', js_path)
+                of.write('\n\n// BR importing: %s\n\n' % f.name)
+                of.write(f2.read())
 
       of.write('''
         var ReactDOMServer = React.__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
@@ -313,10 +341,12 @@ class BottleReact(object):
     child = subprocess.Popen(['nodejs', nodejs_fn], env=env, preexec_fn = set_pdeathsig(signal.SIGTERM))
     def delete_nodejs_fn():
       os.remove(nodejs_fn)
-    threading.Timer(2, delete_nodejs_fn).start()
+    if self.prod:
+      threading.Timer(2, delete_nodejs_fn).start()
     return port, child
   
   def render_server(self, deps, react_js, retry=True):
+    self._init_render_server()
     deps = tuple(deps)
     port = self.get_js_context(deps)
     try:
@@ -385,7 +415,7 @@ class BottleReact(object):
     })
     if callable(render_server):
       render_server = render_server()
-    if self.prod and render_server:
+    if render_server:
       kwargs['body'] = self.render_server(deps, react_js)
     return bottle.template(template, **kwargs)
 
@@ -549,6 +579,6 @@ bottlereact = {
     return clones;
   },
 
-}
+};
 '''
 
