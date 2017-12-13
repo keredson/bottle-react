@@ -1,3 +1,6 @@
+// require react-with-addons.js
+// require react-dom.js
+
 var HelloWorld = React.createClass({
   render: function() {
     return (
