@@ -83,6 +83,40 @@ By default (in production mode) `bottle-react` writes to `/tmp/bottlereact/hashe
   }
 ```
 
+## Server Side Rendering
+To use server side rendering, please install the npm package [`node-jsdom`](https://www.npmjs.com/package/node-jsdom) with:
+
+```
+$ sudo npm install -g node-jsdom
+```
+
+Then pass either `True` or a callable into the `render_server` parameter.  For example:
+
+```python
+def render_server():
+  ua = bottle.request.environ.get('HTTP_USER_AGENT')
+  return util.is_bot(ua)
+```
+
+BTW...  Before enabling it for everyone, run some benchmarks.  We find that it has very little impact on total page load time, at a considerable CPU expense and double the downloaded HTML size.  So we only do it for search bots (as you can see in the example above).
+
+You will also likely have to shim some missing browser features.  At minimum, React likes to put itself under `window` when run inside `nodejs`, so we have:
+
+```javascript
+// react in nodejs will put itself under window
+if(typeof React == 'undefined') {
+  React = window.React;
+}
+```
+
+In our `application.js`, since all our code expects it to be a global.  Likewise, for things `node-jsdom` hasn't yet implemented, you'll likely find a few checks are needed, like:
+```javascript
+if (typeof DOMParser=='undefined') {
+  // i guess we're not using DOMParser inside nodejs...
+}
+```
+
+
 ## Documentation
 
 See the [full documentation](DOCS.md).
