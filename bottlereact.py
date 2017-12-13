@@ -205,6 +205,12 @@ class BottleReact(object):
   def _init_render_server(self):
     if self._inited_render_server: return
     self._NODE_PATH = subprocess.check_output(['npm', 'root', '--quiet', '-g']).decode().strip()
+    env = os.environ.copy()
+    env["NODE_PATH"] = self._NODE_PATH
+    try:
+      subprocess.check_output(['nodejs', '-e', 'require("node-jsdom")'], env=env)
+    except subprocess.CalledProcessError:
+      raise Exception('Node.js package "node-jsdom" was not found (but is required for server side rendering).\nPlease install it with: sudo npm install -g node-jsdom')
     self._inited_render_server = True
 
   def _build_dep_list(self, files):
