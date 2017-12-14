@@ -43,7 +43,7 @@ except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='0.7.0'
+__version__='0.7.1'
 
 
 FLASK_AROUND = False
@@ -204,11 +204,19 @@ class BottleReact(object):
 
   def _init_render_server(self):
     if self._inited_render_server: return
+    try:
+      subprocess.check_output(['which', 'node'])
+    except subprocess.CalledProcessError:
+      raise Exception('Node.js is required but not found.  Please install with: sudo apt-get install nodejs')
+    try:
+      subprocess.check_output(['which', 'npm'])
+    except subprocess.CalledProcessError:
+      raise Exception('NPM is required but not found.  Please install with: sudo apt-get install npm')
     self._NODE_PATH = subprocess.check_output(['npm', 'root', '--quiet', '-g']).decode().strip()
     env = os.environ.copy()
     env["NODE_PATH"] = self._NODE_PATH
     try:
-      subprocess.check_output(['nodejs', '-e', 'require("node-jsdom")'], env=env)
+      subprocess.check_output(['node', '-e', 'require("node-jsdom")'], env=env)
     except subprocess.CalledProcessError:
       raise Exception('Node.js package "node-jsdom" was not found (but is required for server side rendering).\nPlease install it with: sudo npm install -g node-jsdom')
     self._inited_render_server = True
@@ -344,7 +352,7 @@ class BottleReact(object):
 
     env = os.environ.copy()
     env["NODE_PATH"] = self._NODE_PATH
-    child = subprocess.Popen(['nodejs', nodejs_fn], env=env, preexec_fn = set_pdeathsig(signal.SIGTERM))
+    child = subprocess.Popen(['node', nodejs_fn], env=env, preexec_fn = set_pdeathsig(signal.SIGTERM))
     def delete_nodejs_fn():
       os.remove(nodejs_fn)
     if self.prod:
