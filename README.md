@@ -1,4 +1,4 @@
-![image](https://user-images.githubusercontent.com/2049665/33970592-759701da-e039-11e7-9b3c-5e907594dc68.png)
+![image](https://user-images.githubusercontent.com/2049665/34214474-37c285c6-e568-11e7-963e-407533d01d80.png)
 
 # Bottle-React
 
