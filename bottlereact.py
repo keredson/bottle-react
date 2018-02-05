@@ -139,6 +139,11 @@ class BottleReact(object):
             react_class = line.split('=')[0].strip().split()[-1]
             classes_by_file[fn].append(react_class)
             self.__dict__[react_class] = _ReactClass(react_class, fn)
+          if 'createReactClass' in line:
+            if '=' not in line: continue
+            react_class = line.split('=')[0].strip().split()[-1]
+            classes_by_file[fn].append(react_class)
+            self.__dict__[react_class] = _ReactClass(react_class, fn)
           if 'extends React.Component' in line:
             if 'class' not in line: continue
             react_class = line[line.find('class')+5:line.find('extends')].strip()
