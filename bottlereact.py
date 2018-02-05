@@ -154,7 +154,7 @@ class BottleReact(object):
             self._reqs[fn].append(req)
 
     if self.verbose:
-      print('BR classes by fiZZZZile:', dict(classes_by_file.items()))
+      print('BR classes by file:', dict(classes_by_file.items()))
 
     self._fn2hash = {}
     if prod:
@@ -205,7 +205,7 @@ class BottleReact(object):
 
       if self.verbose: print('BR file hashes:', self._fn2hash)
 
-    if self.verbose: print('BR fiZZZZZle requirements: ', dict(self._reqs.items()))
+    if self.verbose: print('BR file requirements: ', dict(self._reqs.items()))
 
   def _init_render_server(self):
     if self._inited_render_server: return
