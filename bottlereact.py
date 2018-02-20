@@ -327,7 +327,6 @@ class BottleReact(object):
                 of.write(f2.read())
 
       of.write('''
-        var ReactDOMServer = React.__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         _br_http.createServer((request, response) => {  
           var body = [];
           request.on('error', function(err) {
@@ -529,12 +528,14 @@ FAKE_BROWSER_JS = '''
 // don't look like nodejs
 const _br_http = require('http');
 const _br_jsdom = require("node-jsdom").jsdom;
+var ReactDOMServer = require('react-dom/server');
 const document = new _br_jsdom();
 const window = document.parentWindow;
 const navigator = window.navigator;
 const HTMLElement = window.HTMLElement;
 const Element = window.Element;
 const history = window.history;
+var original_require = require;
 exports = define = require = undefined;
 '''
 
