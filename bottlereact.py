@@ -327,7 +327,14 @@ class BottleReact(object):
                 of.write(f2.read())
 
       of.write('''
-        _br_http.createServer((request, response) => {  
+        var ReactDOMServer;
+        if('__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED' in React){
+          ReactDOMServer = React.__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        }else{
+          ReactDOMServer = __br_original_require_dont_use_or_youll_be_fired('react-dom/server')
+        }
+        
+        _br_http.createServer((request, response) => { 
           var body = [];
           request.on('error', function(err) {
             console.error('BR nodejs error:', err);
@@ -528,14 +535,13 @@ FAKE_BROWSER_JS = '''
 // don't look like nodejs
 const _br_http = require('http');
 const _br_jsdom = require("node-jsdom").jsdom;
-var ReactDOMServer = require('react-dom/server');
 const document = new _br_jsdom();
 const window = document.parentWindow;
 const navigator = window.navigator;
 const HTMLElement = window.HTMLElement;
 const Element = window.Element;
 const history = window.history;
-var original_require = require;
+var __br_original_require_dont_use_or_youll_be_fired = require;
 exports = define = require = undefined;
 '''
 
@@ -601,4 +607,3 @@ bottlereact = {
 
 };
 '''
-
