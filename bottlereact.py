@@ -331,7 +331,7 @@ class BottleReact(object):
         if('__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED' in React){
           ReactDOMServer = React.__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
         }else{
-          ReactDOMServer = __br_original_require_dont_use_or_youll_be_fired('react-dom/server')
+          ReactDOMServer = __br_original_require('react-dom/server')
         }
         
         _br_http.createServer((request, response) => { 
@@ -541,7 +541,7 @@ const navigator = window.navigator;
 const HTMLElement = window.HTMLElement;
 const Element = window.Element;
 const history = window.history;
-var __br_original_require_dont_use_or_youll_be_fired = require;
+var __br_original_require = require;
 exports = define = require = undefined;
 '''
 
