@@ -43,7 +43,7 @@ except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='0.7.2'
+__version__='16.2.0'
 
 
 FLASK_AROUND = False
