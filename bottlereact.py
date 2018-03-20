@@ -327,8 +327,14 @@ class BottleReact(object):
                 of.write(f2.read())
 
       of.write('''
-        var ReactDOMServer = React.__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
-        _br_http.createServer((request, response) => {  
+        var ReactDOMServer;
+        if('__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED' in React){
+          ReactDOMServer = React.__SECRET_DOM_SERVER_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+        }else{
+          ReactDOMServer = __br_original_require('react-dom/server')
+        }
+        
+        _br_http.createServer((request, response) => { 
           var body = [];
           request.on('error', function(err) {
             console.error('BR nodejs error:', err);
@@ -535,6 +541,7 @@ const navigator = window.navigator;
 const HTMLElement = window.HTMLElement;
 const Element = window.Element;
 const history = window.history;
+var __br_original_require = require;
 exports = define = require = undefined;
 '''
 
@@ -600,4 +607,3 @@ bottlereact = {
 
 };
 '''
-
