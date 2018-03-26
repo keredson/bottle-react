@@ -420,8 +420,10 @@ class BottleReact(object):
       else: # assume javascript
         deps_html.append('<script src="%s"></script>' % bottle.html_escape(path))
     deps_html = '\n'.join(deps_html)
+    init_nonce = kwargs.get('init_nonce', None)
+    init_nonce = ' nonce="%s"' % init_nonce if init_nonce else ''
     init = '''
-    <script>
+    <script%s>
       bottlereact._onLoad(%s, function() {
         ReactDOM.render(
           %s,
@@ -429,7 +431,7 @@ class BottleReact(object):
         );
       });
     </script>
-    ''' % (classes, react_js)
+    ''' % (init_nonce, classes, react_js)
     if 'title' not in kwargs: kwargs['title'] = 'bottle-react - https://github.com/keredson/bottle-react'
     kwargs.update({
       'deps': deps_html,
