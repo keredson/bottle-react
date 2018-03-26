@@ -114,13 +114,20 @@ The `init` variable will look like this:
 </script>
 ```
 
-The function `bottlereact._onLoad` (defined in `bottlereact.js`) takes a list of classes that need to load before the compnent can be rendered, and a callback to be run when they are loaded.  the callback contains normal React code to initialize your component.
+The function `bottlereact._onLoad` (defined in `bottlereact.js`) takes a list of classes that need to load before the component can be rendered, and a callback to be run when they are loaded.  the callback contains normal React code to initialize your component.
 
 We talked internally about (in `prod` mode) having `render_html()` taking advantage of React's ability to pre-render the HTML, but in testing we've found the brower renders the JSX extremely fast already.  So we haven't done it yet, but it's designed to be added in the future.
 
 If you want to use another template, pass in `template='template_fn'` into `render_html()` and bottle-react will use that template instead.
 
-Any additional `kwargs` passed into `render_html()` will be passed through to the template.  For example, `title='My Site'` is very common.
+Any additional `kwargs` passed into `render_html()` will be passed through to the template.  For example, `title='My Site'` is very common. Another useful one to include is `init_nonce`, which will change the `init` script tag to be declared as:
+```html
+<script nonce="{init_nonce}">
+   ...
+</script>
+```
+
+This allows you to use Content Security Policy headers with `BottleReact`. Because `default_render_html_kwargs` can be a function called at each render, it is easy to create the nonce from the same state for use here and in the CSP header.
 
 
 ## jsx_props.py
