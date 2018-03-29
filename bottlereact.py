@@ -25,7 +25,7 @@
 
 from __future__ import print_function
 
-import collections, ctypes, json, os, re, shutil, signal, socket, subprocess, tempfile, threading, time, urllib
+import collections, ctypes, json, os, random, re, shutil, signal, socket, subprocess, tempfile, threading, time, urllib
 try:
   import bottle
   import react.jsx
@@ -43,7 +43,7 @@ except ImportError:
   from urllib import urlopen, urlretrieve
 
 
-__version__='16.2.0'
+__version__='16.2.2'
 
 
 FLASK_AROUND = False
@@ -471,6 +471,8 @@ class _ReactNode(object):
     self.react_class = react_class
     self.props = self.react_class.default_props()
     if props: self.props.update(props)
+    if 'key' not in self.props:
+      self.props['key'] = '_br_%f' % random.random()
     self.children = children if children else []
 
   def get_js_files(self, files=None):
