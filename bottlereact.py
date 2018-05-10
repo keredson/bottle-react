@@ -56,7 +56,7 @@ except ImportError:
 
 
 __ALL__ = ['BottleReact','__version__']
-BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.24/browser.min.js'
+BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js'
 
 
 libc = ctypes.CDLL("libc.so.6")
