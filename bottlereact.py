@@ -103,8 +103,7 @@ class BottleReact(object):
           if path=='bottlereact.js':
             return flask.Response(BOTTLEREACT_JS, mimetype='text/javascript')
           elif path.endswith('.jsx'):
-            response = flask.make_response(flask.send_from_directory(self.jsx_path, path))
-            response.headers['Content-Type'] = 'text/babel'
+            response = flask.make_response(flask.send_from_directory(self.jsx_path, path, mimetype='text/babel'))
             return response
           else:
             return flask.send_from_directory(self.asset_path, path)
@@ -122,8 +121,7 @@ class BottleReact(object):
             bottle.response.set_header('Content-Type', 'text/javascript')
             return BOTTLEREACT_JS
           elif path.endswith('.jsx'):
-            bottle.response.set_header('Content-Type', 'text/babel')
-            return bottle.static_file(path, root=self.jsx_path)
+            return bottle.static_file(path, root=self.jsx_path, mimetype='text/babel')
           else:
             return bottle.static_file(path, root=self.asset_path)
 
