@@ -297,7 +297,7 @@ class BottleReact(object):
           dep = _make_string_fn_safe(dep)
         if dep=='bottlereact.js':
           of.write(BOTTLEREACT_JS)
-        elif dep.endswith('_browser.js') or dep.endswith('_browser.min.js'):
+        elif dep.endswith('_babel.js') or dep.endswith('_babel.min.js'):
           pass
         elif dep.endswith('.js'):
           if self.prod:
