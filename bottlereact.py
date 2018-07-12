@@ -58,8 +58,11 @@ except ImportError:
 __ALL__ = ['BottleReact','__version__']
 BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js'
 
+try:
+    libc = ctypes.CDLL("libc.so.6")
+except OSError:
+    libc = ctypes.CDLL("libc.dylib")
 
-libc = ctypes.CDLL("libc.so.6")
 def set_pdeathsig(sig = signal.SIGTERM):
     def callable():
         return libc.prctl(1, sig)
