@@ -29,8 +29,9 @@ import collections, ctypes, json, os, random, re, shutil, signal, socket, subpro
 try:
   import bottle
   import react.jsx
-except ImportError:
-  pass # need to not error here for setup.py to get the version
+except ImportError as e:
+  # need to not error here for setup.py to get the version
+  print(e, 'please install PyReact')
 
 # python3 compat.
 try:
@@ -56,7 +57,7 @@ except ImportError:
 
 
 __ALL__ = ['BottleReact','__version__']
-BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.min.js'
+BABEL_CORE = 'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.26.0/babel.js'
 
 try:
     libc = ctypes.CDLL("libc.so.6")
@@ -104,7 +105,7 @@ class BottleReact(object):
         @app.route('/__br_assets__/<path:path>')
         def _serve__br_assets(path):
           if path=='bottlereact.js':
-            return flask.Response(BOTTLEREACT_JS, mimetype='text/javascript')
+            return flask.Response(self._bottlereact_js, mimetype='text/javascript')
           elif path.endswith('.jsx'):
             response = flask.make_response(flask.send_from_directory(self.jsx_path, path, mimetype='text/babel'))
             return response
@@ -122,7 +123,7 @@ class BottleReact(object):
         def _serve__br_assets(path):
           if path=='bottlereact.js':
             bottle.response.set_header('Content-Type', 'text/javascript')
-            return BOTTLEREACT_JS
+            return self._bottlereact_js
           elif path.endswith('.jsx'):
             return bottle.static_file(path, root=self.jsx_path, mimetype='text/babel')
           else:
@@ -130,7 +131,7 @@ class BottleReact(object):
 
 
     # load all JSX files
-    classes_by_file = collections.defaultdict(list)
+    self._classes_by_file = classes_by_file = collections.defaultdict(list)
     for fn in sorted(os.listdir(self.jsx_path)):
       if not fn.endswith('.jsx'): continue
       with open(os.path.join(self.jsx_path, fn), 'r') as f:
@@ -157,6 +158,8 @@ class BottleReact(object):
     if self.verbose:
       print('BR classes by file:', dict(classes_by_file.items()))
 
+    self._bottlereact_js = self._build_bottlereact_js()
+    
     self._fn2hash = {}
     if prod:
       transformer = react.jsx.JSXTransformer()
@@ -189,17 +192,17 @@ class BottleReact(object):
         if not os.path.exists(jsx_converted_fn) or os.stat(jsx_converted_fn).st_size==0:
           transformer.transform(os.path.join(self.genned_path, jsx_hashed_fn), js_path=jsx_converted_fn, harmony=self.harmony)
 
+      jsxjs2hash = self._load_fn_to_hash_mapping(self.genned_path, '*.js', dest=self.hashed_path)
+      print('jsxjs2hash',jsxjs2hash)
+      for k,v in jsx2hash.items():
+        self._fn2hash[k] = jsxjs2hash[v[:-1]]
+
       # bottlereact.js
       with open(os.path.join(self.genned_path, 'bottlereact.js'),'w') as f:
-        f.write(BOTTLEREACT_JS)
+        f.write(self._bottlereact_js)
         f.write('\nbottlereact._assets = ')
         json.dump(self._fn2hash, f)
         f.write(';\n')
-
-      # add the jsx files (which are only used server side, so not written to 'bottlereact.js')
-      jsxjs2hash = self._load_fn_to_hash_mapping(self.genned_path, '*.js', dest=self.hashed_path)
-      for k,v in jsx2hash.items():
-        self._fn2hash[k] = jsxjs2hash[v[:-1]]
 
       # get the hashed name of 'bottlereact.js'
       self._fn2hash['bottlereact.js'] = jsxjs2hash['bottlereact.js']
@@ -207,6 +210,21 @@ class BottleReact(object):
       if self.verbose: print('BR file hashes:', self._fn2hash)
 
     if self.verbose: print('BR file requirements: ', dict(self._reqs.items()))
+
+  def _build_bottlereact_js(self):
+    faux_function = '''
+    (function (classes_by_file){
+      for (const [fn, classes] of Object.entries(classes_by_file)) {
+        for (const cls of classes) {
+          if (cls=='HelloWorld') continue;
+          bottlereact[cls] = bottlereact._build_faux_class(cls, fn);
+        }
+      }
+
+
+    })(%s);
+    ''' % json.dumps(self._classes_by_file)
+    return BOTTLEREACT_JS + faux_function
 
   def _init_render_server(self):
     if self._inited_render_server: return
@@ -299,7 +317,7 @@ class BottleReact(object):
         if dep.startswith('http://') or dep.startswith('https://'):
           dep = _make_string_fn_safe(dep)
         if dep=='bottlereact.js':
-          of.write(BOTTLEREACT_JS)
+          of.write(self._bottlereact_js)
         elif dep.endswith('_babel.js') or dep.endswith('_babel.min.js'):
           pass
         elif dep.endswith('.js'):
@@ -426,7 +444,7 @@ class BottleReact(object):
     init = '''
     <script%s>
       bottlereact._onLoad(%s, function() {
-        ReactDOM.render(
+        bottlereact._root = ReactDOM.render(
           %s,
           document.getElementById('__body__')
         );
@@ -577,9 +595,17 @@ function toArray(obj) {
 
 bottlereact = {
 
+  register: function(cls) {
+    bottlereact._register(cls.name, cls);
+  },
+
   _register: function(name, cls) {
+    if (bottlereact[name] && bottlereact[name].name=='BR_FAUX_CLASS') {
+      bottlereact[name].actual = cls;
+    }
     bottlereact[name] = cls;
     checkDeps();
+    if (bottlereact._root) bottlereact._root.forceUpdate();
   },
   
   _onLoad: function(deps, f) {
@@ -604,10 +630,36 @@ bottlereact = {
   },
   
   _cloneWithProps: function(children, props) {
-    var clones =  React.Children.map(children, function(child) {
+    var clones = React.Children.map(children, function(child) {
       return React.cloneElement(child, props);
     });
     return clones;
+  },
+  
+  _build_faux_class: function(name, src) {
+    class BR_FAUX_CLASS extends React.Component {
+      componentDidMount() {
+        src = bottlereact._asset_path(src);
+        if (src.endsWith('.jsx')) {
+          var oReq = new XMLHttpRequest();
+          oReq.addEventListener("load", function() {
+            eval(Babel.transform(this.responseText, {"presets": ["react"]}).code);
+          });
+          oReq.open("GET", src);
+          oReq.send();
+        } else {
+          var script = document.createElement('script');
+          script.src = src;
+          document.head.appendChild(script);
+        }
+      }
+      render() {
+        if (this.constructor.actual) {
+          return React.createElement(this.constructor.actual, this.props, null);
+        } else return null;
+      }
+    }
+    return BR_FAUX_CLASS;
   },
 
 };

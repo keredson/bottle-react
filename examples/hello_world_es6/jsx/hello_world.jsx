@@ -16,4 +16,4 @@ class HelloWorld extends React.Component {
   }
 }
 
-bottlereact._register('HelloWorld', HelloWorld)
+bottlereact.register(HelloWorld)
