@@ -636,20 +636,24 @@ bottlereact = {
     return clones;
   },
   
+  _dynamically_loaded: {},
+  
   _build_faux_class: function(name, src) {
     class BR_FAUX_CLASS extends React.Component {
       componentDidMount() {
-        src = bottlereact._asset_path(src);
+        if (bottlereact._dynamically_loaded[src]) return;
+        bottlereact._dynamically_loaded[src] = true;
+        var real_src = bottlereact._asset_path(src);
         if (src.endsWith('.jsx')) {
           var oReq = new XMLHttpRequest();
           oReq.addEventListener("load", function() {
             eval(Babel.transform(this.responseText, {"presets": ["react"]}).code);
           });
-          oReq.open("GET", src);
+          oReq.open("GET", real_src);
           oReq.send();
         } else {
           var script = document.createElement('script');
-          script.src = src;
+          script.src = real_src;
           document.head.appendChild(script);
         }
       }
