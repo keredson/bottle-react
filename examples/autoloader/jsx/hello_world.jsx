@@ -5,7 +5,6 @@
 
 class HelloWorld extends React.Component {
   render() {
-    console.log('rendering real HelloWorld', bottlereact.Dep)
     return (
       <div>
         <h1>Hello {this.props.name}!</h1>
